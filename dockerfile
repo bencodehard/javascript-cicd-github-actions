@@ -15,6 +15,7 @@ COPY tsconfig.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./  
 COPY src ./src
+COPY tests ./tests
 COPY jest.config.* ./
 COPY example_certs ./example_certs
 
