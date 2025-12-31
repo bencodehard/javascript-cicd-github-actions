@@ -13,19 +13,19 @@ RUN npm ci
 # คัดลอกไฟล์ที่ใช้ build/test
 COPY tsconfig.json ./
 COPY prisma ./prisma
+COPY prisma.config.ts ./  
 COPY src ./src
 COPY jest.config.* ./
 COPY example_certs ./example_certs
 
-# ให้สิทธิ์ owner เป็น appuser (จะใช้ใน stage ถัดไป)
-RUN chown -R appuser:appgroup /app
+RUN npx prisma generate
 
+RUN chown -R appuser:appgroup /app
 # ---------- Build stage ----------
 FROM base AS build
 
 ENV NODE_ENV=production
 
-# build โดยใช้ user ปกติ (ลดสิทธิ์)
 USER appuser
 
 RUN npm run build
@@ -35,11 +35,10 @@ FROM base AS test
 
 ENV NODE_ENV=test
 
-# ใช้ user ปกติ
 USER appuser
 
 # ถ้าอยากให้ใช้ .env ตอน test และไม่ได้ block จาก .dockerignore
-COPY .env .env
+COPY .env.example .env
 
 RUN npm test
 
