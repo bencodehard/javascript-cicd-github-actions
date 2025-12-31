@@ -19,6 +19,11 @@ COPY tests ./tests
 COPY jest.config.* ./
 COPY example_certs ./example_certs
 
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
+RUN npx prisma migrate deploy
+
 RUN npx prisma generate
 
 RUN chown -R appuser:appgroup /app

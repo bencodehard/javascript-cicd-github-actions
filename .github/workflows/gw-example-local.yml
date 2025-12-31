@@ -28,6 +28,7 @@ jobs:
       - name: Build image (runtime stage)
         run: |
           docker build \
+            --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
             -t ${IMAGE_NAME}:latest \
             .
 
