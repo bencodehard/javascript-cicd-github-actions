@@ -14,7 +14,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY prisma ./prisma
 COPY src ./src
-COPY jest.config.* ./ || true
+COPY jest.config.* ./
 COPY example_certs ./example_certs
 
 # ให้สิทธิ์ owner เป็น appuser (จะใช้ใน stage ถัดไป)
