@@ -1,0 +1,94 @@
+name: CI/CD Local Mac (self-hosted)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: simple-users-management-nodejs
+  CONTAINER_NAME: simple-users-management-nodejs
+  APP_PORT: 3000
+  DOCKER_VOLUMES: ""
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: [self-hosted, mac-localhost]
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Docker version
+        run: docker version
+
+      - name: Build image (runtime stage)
+        run: |
+          docker build \
+            -t ${IMAGE_NAME}:latest \
+            .
+
+  test:
+    name: Run unit tests (Docker test stage)
+    runs-on: [self-hosted, mac-localhost]
+    needs: build
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Run tests via Docker (test stage)
+        run: |
+          docker build \
+            --target test \
+            -t ${IMAGE_NAME}:test \
+            .
+
+  deploy:
+    name: Deploy container on local Mac
+    runs-on: [self-hosted, mac-localhost]
+    needs: [build, test]
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build image for deploy (ensure latest code)
+        run: |
+          docker build \
+            -t ${IMAGE_NAME}:latest \
+            .
+
+      - name: Stop and remove existing container (if any)
+        run: |
+          if [ "$(docker ps -aq -f name=${CONTAINER_NAME})" ]; then
+            echo "Stopping and removing existing container..."
+            docker rm -f ${CONTAINER_NAME}
+          else
+            echo "No existing container found."
+          fi
+
+      - name: Run container with restart always, env-file, port, and optional volumes
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          APP_PORT: ${{ env.APP_PORT }}
+          DOCKER_VOLUMES: ${{ env.DOCKER_VOLUMES }}
+        run: |
+          if [ ! -f ".env" ]; then
+            echo ".env file not found in workspace!"
+            exit 1
+          fi
+
+          echo "Using DOCKER_VOLUMES: '${DOCKER_VOLUMES}'"
+
+          docker run -d \
+            --name ${CONTAINER_NAME} \
+            --restart always \
+            --env-file .env \
+            -p ${APP_PORT}:3000 \
+            ${DOCKER_VOLUMES} \
+            ${IMAGE_NAME}:latest
