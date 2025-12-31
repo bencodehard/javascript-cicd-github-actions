@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 import { env } from "../config/env";
 
 export interface JwtPayload {
@@ -7,11 +7,17 @@ export interface JwtPayload {
 }
 
 export const signToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, env.auth.jwtSecret, {
-    expiresIn: env.auth.jwtExpiresIn,
-  });
+  const secret: Secret = env.auth.jwtSecret;
+
+  const options: SignOptions = {
+    // cast ผ่าน unknown → ให้ TS หยุดโวยเรื่อง StringValue
+    expiresIn: env.auth.jwtExpiresIn as unknown as SignOptions["expiresIn"],
+  };
+
+  return jwt.sign(payload, secret, options);
 };
 
 export const verifyToken = (token: string): JwtPayload => {
-  return jwt.verify(token, env.auth.jwtSecret) as JwtPayload;
+  const secret: Secret = env.auth.jwtSecret;
+  return jwt.verify(token, secret) as JwtPayload;
 };

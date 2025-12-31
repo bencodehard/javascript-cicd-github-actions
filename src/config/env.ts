@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import type { Secret } from "jsonwebtoken";
 
 dotenv.config();
 
@@ -27,7 +28,7 @@ export const env = {
 
   // Auth
   auth: {
-    jwtSecret: required(process.env.JWT_SECRET, "JWT_SECRET"),
+    jwtSecret: required(process.env.JWT_SECRET, "JWT_SECRET") as Secret,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
     bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10),
   },
