@@ -44,6 +44,7 @@ jobs:
       - name: Run tests via Docker (test stage)
         run: |
           docker build \
+            --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
             --target test \
             -t ${IMAGE_NAME}:test \
             .
@@ -60,6 +61,7 @@ jobs:
       - name: Build image for deploy (ensure latest code)
         run: |
           docker build \
+            --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
             -t ${IMAGE_NAME}:latest \
             .
 
