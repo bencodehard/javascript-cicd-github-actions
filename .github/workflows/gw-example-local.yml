@@ -78,17 +78,16 @@ jobs:
           APP_PORT: ${{ env.APP_PORT }}
           DOCKER_VOLUMES: ${{ env.DOCKER_VOLUMES }}
         run: |
-          if [ ! -f ".env" ]; then
-            echo ".env file not found in workspace!"
-            exit 1
-          fi
+        #   if [ ! -f ".env" ]; then
+        #     echo ".env file not found in workspace!"
+        #     exit 1
+        #   fi
 
           echo "Using DOCKER_VOLUMES: '${DOCKER_VOLUMES}'"
 
           docker run -d \
             --name ${CONTAINER_NAME} \
             --restart always \
-            --env-file .env \
+            --env-file .env.example \
             -p ${APP_PORT}:3000 \
-            ${DOCKER_VOLUMES} \
             ${IMAGE_NAME}:latest
