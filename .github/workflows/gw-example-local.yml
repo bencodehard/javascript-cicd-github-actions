@@ -39,7 +39,10 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build image
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push image
         run: |
           docker build \
             --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
@@ -47,23 +50,6 @@ jobs:
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest \
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }} \
             .
-            
-      - name: Disable Docker Credential Helper
-        run: |
-          mkdir -p /tmp/.docker
-          echo '{"credsStore": ""}' > /tmp/.docker/config.json
-
-      - name: Manual Login to GHCR
-        run: |
-          export DOCKER_CONFIG=/tmp/.docker
-          mkdir -p $DOCKER_CONFIG
-          echo '{"credsStore": ""}' > $DOCKER_CONFIG/config.json
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Push image to GHCR
-        env:
-          DOCKER_CONFIG: /tmp/.docker 
-        run: |
           docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
           docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }}
 
