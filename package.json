@@ -8,7 +8,8 @@
     "prod": "NODE_EXTRA_CA_CERTS=./example_certs/ca.crt ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",

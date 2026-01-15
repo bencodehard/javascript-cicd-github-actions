@@ -12,6 +12,17 @@ jest.mock("../src/services/userService");
 
 const mockedUserService = userService as jest.Mocked<typeof userService>;
 
+const createMockUser = (overrides?: any) => ({
+  id: "1",
+  email: "test@example.com",
+  firstName: "Test",
+  lastName: "User",
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
 describe("userController", () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
@@ -19,7 +30,7 @@ describe("userController", () => {
   let jsonSpy: jest.Mock;
 
   beforeEach(() => {
-    statusSpy = jest.fn().mockReturnValue({ json: jest.fn() });
+    statusSpy = jest.fn().mockReturnThis();
     jsonSpy = jest.fn().mockReturnValue(undefined);
 
     mockRes = {
@@ -45,7 +56,7 @@ describe("userController", () => {
       };
 
       const mockResult = {
-        user: { id: "1", email: "test@example.com", firstName: "Test", lastName: "User" },
+        user: createMockUser(),
         token: "mock_token",
       };
 
@@ -106,7 +117,7 @@ describe("userController", () => {
       };
 
       const mockResult = {
-        user: { id: "1", email: "test@example.com" },
+        user: createMockUser(),
         token: "mock_token",
       };
 
@@ -142,6 +153,21 @@ describe("userController", () => {
 
       expect(statusSpy).toHaveBeenCalledWith(401);
     });
+
+    it("should return 500 on server error", async () => {
+      mockReq.body = {
+        email: "test@example.com",
+        password: "Password123!",
+      };
+
+      mockedUserService.loginUser.mockRejectedValue(new Error("Server error"));
+      statusSpy.mockReturnValue({ json: jsonSpy });
+
+      await loginHandler(mockReq as Request, mockRes as Response);
+
+      expect(statusSpy).toHaveBeenCalledWith(500);
+      expect(jsonSpy).toHaveBeenCalledWith({ message: "Internal server error" });
+    });
   });
 
   describe("meHandler", () => {
@@ -151,7 +177,7 @@ describe("userController", () => {
         user: { userId: "1", email: "test@example.com" },
       };
 
-      const mockUser = { id: "1", email: "test@example.com" };
+      const mockUser = createMockUser();
       mockedUserService.getUserById.mockResolvedValue(mockUser);
       statusSpy.mockReturnValue({ json: jsonSpy });
 
@@ -162,7 +188,7 @@ describe("userController", () => {
     });
 
     it("should return 401 when not authenticated", async () => {
-      mockRes.status = () => ({ json: jsonSpy });
+      statusSpy.mockReturnValue({ json: jsonSpy });
 
       await meHandler(mockReq as any, mockRes as Response);
 
@@ -182,6 +208,21 @@ describe("userController", () => {
 
       expect(statusSpy).toHaveBeenCalledWith(404);
     });
+
+    it("should return 500 on error", async () => {
+      const authRequest = {
+        ...mockReq,
+        user: { userId: "1", email: "test@example.com" },
+      };
+
+      mockedUserService.getUserById.mockRejectedValue(new Error("Database error"));
+      statusSpy.mockReturnValue({ json: jsonSpy });
+
+      await meHandler(authRequest as any, mockRes as Response);
+
+      expect(statusSpy).toHaveBeenCalledWith(500);
+      expect(jsonSpy).toHaveBeenCalledWith({ message: "Internal server error" });
+    });
   });
 
   describe("getUserByIdHandler", () => {
@@ -192,7 +233,7 @@ describe("userController", () => {
         user: { userId: "1", email: "test@example.com" },
       };
 
-      const mockUser = { id: "1", email: "test@example.com" };
+      const mockUser = createMockUser();
       mockedUserService.getUserById.mockResolvedValue(mockUser);
       statusSpy.mockReturnValue({ json: jsonSpy });
 
@@ -229,6 +270,22 @@ describe("userController", () => {
 
       expect(statusSpy).toHaveBeenCalledWith(404);
     });
+
+    it("should return 500 on error", async () => {
+      const authRequest = {
+        ...mockReq,
+        params: { id: "1" },
+        user: { userId: "1", email: "test@example.com" },
+      };
+
+      mockedUserService.getUserById.mockRejectedValue(new Error("Database error"));
+      statusSpy.mockReturnValue({ json: jsonSpy });
+
+      await getUserByIdHandler(authRequest as any, mockRes as Response);
+
+      expect(statusSpy).toHaveBeenCalledWith(500);
+      expect(jsonSpy).toHaveBeenCalledWith({ message: "Internal server error" });
+    });
   });
 
   describe("updateMeHandler", () => {
@@ -239,7 +296,7 @@ describe("userController", () => {
         user: { userId: "1", email: "test@example.com" },
       };
 
-      const mockUpdatedUser = { id: "1", firstName: "Updated" };
+      const mockUpdatedUser = createMockUser({ firstName: "Updated" });
       mockedUserService.updateCurrentUser.mockResolvedValue(mockUpdatedUser);
       statusSpy.mockReturnValue({ json: jsonSpy });
 
@@ -249,7 +306,7 @@ describe("userController", () => {
     });
 
     it("should return 401 when not authenticated", async () => {
-      mockRes.status = () => ({ json: jsonSpy });
+      statusSpy.mockReturnValue({ json: jsonSpy });
 
       await updateMeHandler(mockReq as any, mockRes as Response);
 
@@ -268,6 +325,22 @@ describe("userController", () => {
       await updateMeHandler(authRequest as any, mockRes as Response);
 
       expect(statusSpy).toHaveBeenCalledWith(400);
+    });
+
+    it("should return 500 on error", async () => {
+      const authRequest = {
+        ...mockReq,
+        body: { firstName: "Updated" },
+        user: { userId: "1", email: "test@example.com" },
+      };
+
+      mockedUserService.updateCurrentUser.mockRejectedValue(new Error("Database error"));
+      statusSpy.mockReturnValue({ json: jsonSpy });
+
+      await updateMeHandler(authRequest as any, mockRes as Response);
+
+      expect(statusSpy).toHaveBeenCalledWith(500);
+      expect(jsonSpy).toHaveBeenCalledWith({ message: "Internal server error" });
     });
   });
 });

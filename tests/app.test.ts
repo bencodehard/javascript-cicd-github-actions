@@ -1,15 +1,27 @@
 import request from "supertest";
 import { app } from "../src/app";
-import * as prismaConfig from "../src/config/prisma";
-import * as redisClient from "../src/cache/redisClient";
+import { getRedisClient } from "../src/cache/redisClient";
 
-jest.mock("../src/config/prisma");
 jest.mock("../src/cache/redisClient");
 
-const mockedPrisma = prismaConfig as jest.Mocked<typeof prismaConfig>;
-const mockedRedisClient = redisClient as jest.Mocked<typeof redisClient>;
+const mockedGetRedisClient = getRedisClient as jest.MockedFunction<typeof getRedisClient>;
+
+// Mock prisma after the app import
+jest.mock("../src/config/prisma", () => ({
+  prisma: {
+    user: {
+      count: jest.fn(),
+    },
+  },
+}));
+
+import { prisma } from "../src/config/prisma";
 
 describe("app basic routes", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it("GET /health should return ok", async () => {
     const res = await request(app).get("/health");
 
@@ -18,7 +30,7 @@ describe("app basic routes", () => {
   });
 
   it("GET /db-check should return ok with user count", async () => {
-    mockedPrisma.prisma.user.count = jest.fn().mockResolvedValue(5);
+    (prisma.user.count as jest.Mock).mockResolvedValueOnce(5);
 
     const res = await request(app).get("/db-check");
 
@@ -28,9 +40,7 @@ describe("app basic routes", () => {
   });
 
   it("GET /db-check should return error on db failure", async () => {
-    mockedPrisma.prisma.user.count = jest
-      .fn()
-      .mockRejectedValue(new Error("DB error"));
+    (prisma.user.count as jest.Mock).mockRejectedValueOnce(new Error("DB error"));
 
     const res = await request(app).get("/db-check");
 
@@ -45,7 +55,7 @@ describe("app basic routes", () => {
       get: jest.fn().mockResolvedValue("pong:123456"),
     };
 
-    mockedRedisClient.getRedisClient.mockReturnValue(mockRedis as any);
+    mockedGetRedisClient.mockReturnValue(mockRedis as any);
 
     const res = await request(app).get("/cache-check");
 
@@ -60,7 +70,7 @@ describe("app basic routes", () => {
       set: jest.fn().mockRejectedValue(new Error("Redis error")),
     };
 
-    mockedRedisClient.getRedisClient.mockReturnValue(mockRedis as any);
+    mockedGetRedisClient.mockReturnValue(mockRedis as any);
 
     const res = await request(app).get("/cache-check");
 
