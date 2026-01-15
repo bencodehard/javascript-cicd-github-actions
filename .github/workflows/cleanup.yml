@@ -12,7 +12,7 @@ jobs:
       packages: write
 
     steps:
-      - name: Delete untagged images (พวก Image ขยะที่ไม่มี Tag)
+      - name: Delete untagged images
         uses: actions/delete-package-versions@v5
         with: 
           package-name: 'simple-users-management-nodejs'
@@ -20,7 +20,7 @@ jobs:
           min-versions-to-keep: 0
           delete-only-untagged-versions: 'true'
 
-      - name: Delete old tagged versions (เก็บไว้แค่ 10 ตัวล่าสุด)
+      - name: Delete old tagged versions
         uses: actions/delete-package-versions@v5
         with:
           package-name: 'simple-users-management-nodejs'

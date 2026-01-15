@@ -50,8 +50,8 @@ jobs:
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest \
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }} \
             .
-          docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
-          docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+  
 
   test:
     name: Run unit tests
@@ -77,20 +77,13 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Disable Docker Credential Helper
-        run: |
-          mkdir -p /tmp/.docker
-          echo '{"credsStore": ""}' > /tmp/.docker/config.json
-
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Pull image from GHCR
-        env:
-          DOCKER_CONFIG: /tmp/.docker
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
-          docker tag ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest ${IMAGE_NAME}:latest
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest ${{ env.IMAGE_NAME }}:latest
 
       - name: Stop and remove existing container
         run: |
