@@ -4,11 +4,20 @@ import helmet from "helmet";
 import { prisma } from "./config/prisma";
 import { getRedisClient } from "./cache/redisClient";
 import { userRoutes } from "./routes/userRoutes";
+import { env } from "./config/env";
 
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: env.allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400,
+  })
+);
 app.use(express.json());
 app.use("/api/users", userRoutes);
 

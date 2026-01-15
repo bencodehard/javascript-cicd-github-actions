@@ -32,5 +32,7 @@ export const env = {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
     bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || "10", 10),
   },
-  
+
+  // CORS
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(","),
 };
