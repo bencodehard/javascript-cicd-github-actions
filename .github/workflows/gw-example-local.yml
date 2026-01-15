@@ -14,10 +14,9 @@ env:
   DOCKER_VOLUMES: ""
 
 jobs:
-  build:
-    name: Build Docker image
+  SonarQube:
+    name: Run SonarQube Analysis
     runs-on: [self-hosted, mac-localhost]
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -32,6 +31,12 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+
+  build:
+    name: Build Docker image
+    runs-on: [self-hosted, mac-localhost]
+    needs: SonarQube
+    steps:
       - name: Docker version
         run: docker version
 
@@ -46,7 +51,6 @@ jobs:
     name: Run unit tests (Docker test stage)
     runs-on: [self-hosted, mac-localhost]
     needs: build
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -63,17 +67,16 @@ jobs:
     name: Deploy container on local Mac
     runs-on: [self-hosted, mac-localhost]
     needs: [build, test]
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build image for deploy (ensure latest code)
-        run: |
-          docker build \
-            --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
-            -t ${IMAGE_NAME}:latest \
-            .
+      # - name: Build image for deploy (ensure latest code)
+      #   run: |
+      #     docker build \
+      #       --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
+      #       -t ${IMAGE_NAME}:latest \
+      #       .
 
       - name: Stop and remove existing container (if any)
         run: |

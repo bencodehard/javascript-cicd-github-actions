@@ -17,6 +17,7 @@ COPY prisma.config.ts ./
 COPY src ./src
 COPY tests ./tests
 COPY jest.config.* ./
+COPY jest.setup.ts ./
 COPY example_certs ./example_certs
 
 ARG DATABASE_URL
