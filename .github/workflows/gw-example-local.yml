@@ -37,15 +37,29 @@ jobs:
     runs-on: [self-hosted, mac-localhost]
     needs: SonarQube
     steps:
-      - name: Docker version
-        run: docker version
+      - name: Checkout source
+        uses: actions/checkout@v4
 
       - name: Build image (runtime stage)
         run: |
           docker build \
             --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
             -t ${IMAGE_NAME}:latest \
+            -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest \
+            -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }} \
             .
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Push image to GHCR
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
+          docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }}
 
   test:
     name: Run unit tests (Docker test stage)
@@ -71,12 +85,17 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # - name: Build image for deploy (ensure latest code)
-      #   run: |
-      #     docker build \
-      #       --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
-      #       -t ${IMAGE_NAME}:latest \
-      #       .
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Pull image from GHCR
+        run: |
+          docker pull ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
+          docker tag ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest ${IMAGE_NAME}:latest
 
       - name: Stop and remove existing container (if any)
         run: |
