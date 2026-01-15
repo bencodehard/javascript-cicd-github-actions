@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: simple-users-management-nodejs
   CONTAINER_NAME: simple-users-management-nodejs
   APP_PORT: 3000
-  DOCKER_VOLUMES: "" # ถ้าไม่มี Volume ให้ปล่อยว่างไว้ แต่ถ้ามีให้ใส่ format "-v /host:/container"
+  DOCKER_VOLUMES: ""
 
 jobs:
   SonarQube:
@@ -31,7 +31,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-
   build:
     name: Build Docker image
     runs-on: [self-hosted, mac-localhost]
@@ -40,7 +39,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build image (runtime stage)
+      - name: Build image
         run: |
           docker build \
             --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
@@ -59,25 +58,27 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }} 
           logout: false
         env:
           DOCKER_CONFIG: /tmp/.docker
 
       - name: Push image to GHCR
+        env:
+          DOCKER_CONFIG: /tmp/.docker 
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
           docker push ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }}
 
   test:
-    name: Run unit tests (Docker test stage)
+    name: Run unit tests
     runs-on: [self-hosted, mac-localhost]
     needs: build
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Run tests via Docker (test stage)
+      - name: Run tests via Docker
         run: |
           docker build \
             --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
@@ -109,9 +110,10 @@ jobs:
           DOCKER_CONFIG: /tmp/.docker
 
       - name: Pull image from GHCR
+        env:
+          DOCKER_CONFIG: /tmp/.docker
         run: |
           docker pull ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
-          # Tag ให้ชื่อสั้นลงเพื่อความง่ายในการ Run
           docker tag ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest ${IMAGE_NAME}:latest
 
       - name: Stop and remove existing container
@@ -130,7 +132,6 @@ jobs:
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           APP_PORT: ${{ env.APP_PORT }}
           DOCKER_VOLUMES: ${{ env.DOCKER_VOLUMES }}
-          # แนะนำ: Inject Secret ของจริงเข้าไปแทน .env.example ถ้าทำได้
           REAL_DATABASE_URL: ${{ secrets.DATABASE_URL }} 
         run: |
           docker run -d \
