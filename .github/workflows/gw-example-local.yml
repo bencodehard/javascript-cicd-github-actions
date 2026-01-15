@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: simple-users-management-nodejs
   CONTAINER_NAME: simple-users-management-nodejs
   APP_PORT: 3000
-  DOCKER_VOLUMES: ""
+  DOCKER_VOLUMES: "" # ถ้าไม่มี Volume ให้ปล่อยว่างไว้ แต่ถ้ามีให้ใส่ format "-v /host:/container"
 
 jobs:
   SonarQube:
@@ -48,6 +48,11 @@ jobs:
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest \
             -t ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:${{ github.sha }} \
             .
+            
+      - name: Disable Docker Credential Helper
+        run: |
+          mkdir -p /tmp/.docker
+          echo '{"credsStore": ""}' > /tmp/.docker/config.json
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -88,6 +93,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Disable Docker Credential Helper
+        run: |
+          mkdir -p /tmp/.docker
+          echo '{"credsStore": ""}' > /tmp/.docker/config.json
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -101,27 +111,33 @@ jobs:
       - name: Pull image from GHCR
         run: |
           docker pull ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest
+          # Tag ให้ชื่อสั้นลงเพื่อความง่ายในการ Run
           docker tag ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}:latest ${IMAGE_NAME}:latest
 
-      - name: Stop and remove existing container (if any)
+      - name: Stop and remove existing container
         run: |
           if [ "$(docker ps -aq -f name=${CONTAINER_NAME})" ]; then
             echo "Stopping and removing existing container..."
+            docker stop ${CONTAINER_NAME} || true
             docker rm -f ${CONTAINER_NAME}
           else
             echo "No existing container found."
           fi
 
-      - name: Run container with restart always, env-file, port, and optional volumes
+      - name: Run container
         env:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           APP_PORT: ${{ env.APP_PORT }}
           DOCKER_VOLUMES: ${{ env.DOCKER_VOLUMES }}
+          # แนะนำ: Inject Secret ของจริงเข้าไปแทน .env.example ถ้าทำได้
+          REAL_DATABASE_URL: ${{ secrets.DATABASE_URL }} 
         run: |
           docker run -d \
             --name ${CONTAINER_NAME} \
             --restart always \
+            -e DATABASE_URL="$REAL_DATABASE_URL" \
             --env-file .env.example \
             -p ${APP_PORT}:3000 \
+            ${DOCKER_VOLUMES} \
             ${IMAGE_NAME}:latest
