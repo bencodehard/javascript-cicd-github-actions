@@ -55,6 +55,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
+          logout: false
+        env:
+          DOCKER_CONFIG: /tmp/.docker
 
       - name: Push image to GHCR
         run: |
@@ -91,6 +94,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
+          logout: false
+        env:
+          DOCKER_CONFIG: /tmp/.docker
 
       - name: Pull image from GHCR
         run: |
