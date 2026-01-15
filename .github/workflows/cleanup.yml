@@ -1,0 +1,29 @@
+name: Cleanup Old Images
+
+on:
+  workflow_dispatch: 
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Delete untagged images (พวก Image ขยะที่ไม่มี Tag)
+        uses: actions/delete-package-versions@v5
+        with: 
+          package-name: 'simple-users-management-nodejs'
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'
+
+      - name: Delete old tagged versions (เก็บไว้แค่ 10 ตัวล่าสุด)
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'simple-users-management-nodejs'
+          package-type: 'container'
+          min-versions-to-keep: 2
+          ignore-versions: '^(latest|main|prod).*'
